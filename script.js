@@ -308,25 +308,55 @@ async function fetchData() {
                 low: d.temp,
                 close: d.temp,
                 value: d.temp,  // 折線圖用
+                
+                // RH K線
+                rh_open: d.rh, rh_high: d.rh, rh_low: d.rh, rh_close: d.rh,
                 rh_val: d.rh,
+                
                 wd_val: d.wd,
+                
+                // WS K線
+                ws_open: d.ws, ws_high: d.ws, ws_low: d.ws, ws_close: d.ws,
                 ws_val: d.ws,
+                
+                // P K線
+                p_open: d.p, p_high: d.p, p_low: d.p, p_close: d.p,
                 p_val: d.p,
+                
                 pr_sum: (typeof d.pr === 'number' && !isNaN(d.pr)) ? d.pr : 0,
                 sr_val: d.sr
             };
         } else {
             let g = groupedData[trueUtcMs];
             if (d.temp !== null) {
+                if (g.open === null || g.open === undefined) g.open = d.temp;
                 g.high = Math.max(g.high ?? -Infinity, d.temp);
                 g.low = Math.min(g.low ?? Infinity, d.temp);
                 g.close = d.temp;
                 g.value = d.temp;
             }
-            if (d.rh !== null) g.rh_val = d.rh;
+            if (d.rh !== null) {
+                if (g.rh_open === null || g.rh_open === undefined) g.rh_open = d.rh;
+                g.rh_high = Math.max(g.rh_high ?? -Infinity, d.rh);
+                g.rh_low = Math.min(g.rh_low ?? Infinity, d.rh);
+                g.rh_close = d.rh;
+                g.rh_val = d.rh;
+            }
             if (d.wd !== null) g.wd_val = d.wd;
-            if (d.ws !== null) g.ws_val = d.ws;
-            if (d.p !== null) g.p_val = d.p;
+            if (d.ws !== null) {
+                if (g.ws_open === null || g.ws_open === undefined) g.ws_open = d.ws;
+                g.ws_high = Math.max(g.ws_high ?? -Infinity, d.ws);
+                g.ws_low = Math.min(g.ws_low ?? Infinity, d.ws);
+                g.ws_close = d.ws;
+                g.ws_val = d.ws;
+            }
+            if (d.p !== null) {
+                if (g.p_open === null || g.p_open === undefined) g.p_open = d.p;
+                g.p_high = Math.max(g.p_high ?? -Infinity, d.p);
+                g.p_low = Math.min(g.p_low ?? Infinity, d.p);
+                g.p_close = d.p;
+                g.p_val = d.p;
+            }
             if (typeof d.pr === 'number' && !isNaN(d.pr)) {
                 g.pr_sum = (g.pr_sum || 0) + d.pr;
             }
@@ -368,6 +398,60 @@ async function updateChart() {
     } else if (chartType === 'line') {
         const series = chart.addLineSeries({ color: '#2962FF', lineWidth: 2, priceScaleId: 'right' });
         series.setData(data.filter(d => d.value !== undefined && d.value !== null).map(d => ({ time: d.time, value: d.value })));
+        currentSeriesList.push(series);
+    } else if (chartType === 'candlestick_rh') {
+        const series = chart.addCandlestickSeries({
+            upColor: '#ef5350',
+            downColor: '#26a69a',
+            borderVisible: false,
+            wickUpColor: '#ef5350',
+            wickDownColor: '#26a69a',
+            priceScaleId: 'right',
+            title: '相對濕度 (%)'
+        });
+        series.setData(data.filter(d => d.rh_open !== undefined && d.rh_open !== null).map(d => ({
+            time: d.time,
+            open: d.rh_open,
+            high: d.rh_high,
+            low: d.rh_low,
+            close: d.rh_close
+        })));
+        currentSeriesList.push(series);
+    } else if (chartType === 'candlestick_ws') {
+        const series = chart.addCandlestickSeries({
+            upColor: '#ef5350',
+            downColor: '#26a69a',
+            borderVisible: false,
+            wickUpColor: '#ef5350',
+            wickDownColor: '#26a69a',
+            priceScaleId: 'right',
+            title: '風速 (m/s)'
+        });
+        series.setData(data.filter(d => d.ws_open !== undefined && d.ws_open !== null).map(d => ({
+            time: d.time,
+            open: d.ws_open,
+            high: d.ws_high,
+            low: d.ws_low,
+            close: d.ws_close
+        })));
+        currentSeriesList.push(series);
+    } else if (chartType === 'candlestick_p') {
+        const series = chart.addCandlestickSeries({
+            upColor: '#ef5350',
+            downColor: '#26a69a',
+            borderVisible: false,
+            wickUpColor: '#ef5350',
+            wickDownColor: '#26a69a',
+            priceScaleId: 'right',
+            title: '氣壓 (hPa)'
+        });
+        series.setData(data.filter(d => d.p_open !== undefined && d.p_open !== null).map(d => ({
+            time: d.time,
+            open: d.p_open,
+            high: d.p_high,
+            low: d.p_low,
+            close: d.p_close
+        })));
         currentSeriesList.push(series);
     } else if (chartType === 'rh') {
         const series = chart.addLineSeries({ color: '#00BCD4', lineWidth: 2, title: '相對濕度 (%)', priceScaleId: 'right' });
