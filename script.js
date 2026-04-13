@@ -24,9 +24,26 @@ const today = new Date().toISOString().split('T')[0];
 document.getElementById('startDate').value = today;
 document.getElementById('endDate').value = today;
 
+let globalCache = {
+    params: {},
+    data: null
+};
+
 // 從 API 獲取資料
 async function fetchData() {
     const dataType = document.getElementById('dataType').value;
+    const city = document.getElementById('city').value;
+    const forecastInterval = document.getElementById('forecastInterval').value;
+    const startDateStr = document.getElementById('startDate').value;
+    const endDateStr = document.getElementById('endDate').value;
+    const intervalText = document.getElementById('interval').value;
+
+    const currentParams = JSON.stringify({ dataType, city, forecastInterval, startDateStr, endDateStr, intervalText });
+
+    if (globalCache.data && globalCache.params === currentParams) {
+        return globalCache.data;
+    }
+
     const searchBtn = document.getElementById('searchBtn');
     
     if (dataType === 'forecast') {
@@ -138,7 +155,9 @@ async function fetchData() {
             searchBtn.innerText = '查詢資料';
             searchBtn.disabled = false;
             
-            return result.sort((a, b) => a.time - b.time);
+            globalCache.params = currentParams;
+            globalCache.data = result.sort((a, b) => a.time - b.time);
+            return globalCache.data;
             
         } catch (err) {
             alert(err.message);
@@ -190,7 +209,9 @@ async function fetchData() {
             searchBtn.innerText = '查詢資料';
             searchBtn.disabled = false;
             
-            return result.sort((a, b) => a.time - b.time);
+            globalCache.params = currentParams;
+            globalCache.data = result.sort((a, b) => a.time - b.time);
+            return globalCache.data;
             
         } catch (err) {
             alert(err.message);
@@ -200,8 +221,6 @@ async function fetchData() {
         }
     }
 
-    const startDateStr = document.getElementById('startDate').value;
-    const endDateStr = document.getElementById('endDate').value;
     const start = new Date(startDateStr);
     const end = new Date(endDateStr);
     
@@ -244,7 +263,6 @@ async function fetchData() {
     searchBtn.innerText = '查詢資料';
     searchBtn.disabled = false;
     
-    const intervalText = document.getElementById('interval').value;
     const groupedData = {};
     
     combinedRawData.forEach(d => {
@@ -316,6 +334,9 @@ async function fetchData() {
     
     // 排序並提取出轉換後的 K 線 Array
     const data = Object.values(groupedData).sort((a, b) => a.time - b.time);
+    
+    globalCache.params = currentParams;
+    globalCache.data = data;
     return data;
 }
 
