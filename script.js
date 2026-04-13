@@ -357,6 +357,7 @@ document.getElementById('dataType').addEventListener('change', () => {
     document.getElementById('startDate').style.display = isForecast ? 'none' : 'inline-block';
     document.querySelector('label[for="endDate"]').style.display = isForecast ? 'none' : 'inline-block';
     document.getElementById('endDate').style.display = isForecast ? 'none' : 'inline-block';
+    document.getElementById('obsDateButtons').style.display = isForecast ? 'none' : 'inline-block';
     document.querySelector('label[for="interval"]').style.display = isForecast ? 'none' : 'inline-block';
     document.getElementById('interval').style.display = isForecast ? 'none' : 'inline-block';
     
@@ -372,6 +373,34 @@ document.getElementById('searchBtn').addEventListener('click', updateChart);
 window.addEventListener('resize', () => {
     chart.applyOptions({ width: document.getElementById('chart').offsetWidth });
 });
+
+// 日期按鈕功能
+function adjustDate(dayDiff, monthDiff) {
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    if (!startDateInput.value || !endDateInput.value) return;
+
+    let start = new Date(startDateInput.value);
+    let end = new Date(endDateInput.value);
+    
+    start.setMonth(start.getMonth() + monthDiff);
+    start.setDate(start.getDate() + dayDiff);
+    
+    end.setMonth(end.getMonth() + monthDiff);
+    end.setDate(end.getDate() + dayDiff);
+    
+    // 轉回 YYYY-MM-DD
+    startDateInput.value = start.toISOString().split('T')[0];
+    endDateInput.value = end.toISOString().split('T')[0];
+    
+    updateChart();
+}
+
+document.getElementById('prevDayBtn').addEventListener('click', () => adjustDate(-1, 0));
+document.getElementById('nextDayBtn').addEventListener('click', () => adjustDate(1, 0));
+document.getElementById('prevMonthBtn').addEventListener('click', () => adjustDate(0, -1));
+document.getElementById('nextMonthBtn').addEventListener('click', () => adjustDate(0, 1));
 
 // 初始渲染
 updateChart();

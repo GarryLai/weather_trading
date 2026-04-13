@@ -54,6 +54,13 @@
 
         <label for="endDate">結束日期：</label>
         <input type="date" id="endDate">
+        
+        <span id="obsDateButtons">
+            <button id="prevMonthBtn">⏪ 上個月</button>
+            <button id="prevDayBtn">◀ 前一日</button>
+            <button id="nextDayBtn">▶ 後一日</button>
+            <button id="nextMonthBtn">⏩下個月</button>
+        </span>
 
         <label for="chartType">圖表類型：</label>
         <select id="chartType">
@@ -64,9 +71,9 @@
         <label for="interval">統計區間：</label>
         <select id="interval">
             <option value="1m">分鐘</option>
-            <option value="1h">小時 (整點開盤)</option>
+            <option value="1h" selected>小時 (整點開盤)</option>
             <option value="4h">4小時 (0, 4, 8...時整點)</option>
-            <option value="1d" selected>日 (每日8點開盤)</option>
+            <option value="1d">日 (每日8點開盤)</option>
             <option value="1mo">月</option>
         </select>
         
