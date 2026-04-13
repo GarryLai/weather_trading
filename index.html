@@ -9,16 +9,16 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 </head>
-<body class="bg-dark text-light">
+<body class="bg-dark text-light d-flex flex-column" style="height: 100dvh; overflow: hidden;">
 
-<div class="container-xl py-4">
-    <div class="d-flex align-items-center justify-content-center mb-4">
-        <h2 class="fw-bold m-0"><i class="bi bi-cloud-sun"></i> 天氣看板</h2>
+<div class="container-xl py-3 d-flex flex-column h-100 overflow-y-auto">
+    <div class="d-flex align-items-center justify-content-center mb-3 flex-shrink-0">
+        <h2 class="fw-bold m-0 fs-4 fs-md-2"><i class="bi bi-cloud-sun"></i> 天氣看板</h2>
     </div>
 
-    <div class="card bg-secondary text-white shadow-sm mb-4 border-0">
-        <div class="card-body">
-            <div class="row g-3">
+    <div class="card bg-secondary text-white shadow-sm mb-3 border-0 flex-shrink-0">
+        <div class="card-body p-3">
+            <div class="row g-2 g-md-3">
                 
                 <!-- 控制群組：資料來源 -->
                 <div class="col-lg-2 col-md-4 col-sm-6">
@@ -92,12 +92,12 @@
                 <!-- 觀測專用按鈕，放置在新的一列 -->
                 <div class="col-lg-4 col-md-8 col-sm-12 obs-only">
                     <label class="form-label d-none d-lg-block">&nbsp;</label>
-                    <div id="obsDateButtons" class="d-flex gap-2">
-                        <button id="prevMonthBtn" class="btn btn-outline-light flex-fill text-nowrap"><i class="bi bi-chevron-double-left"></i> 上月</button>
-                        <button id="prevDayBtn" class="btn btn-outline-light flex-fill text-nowrap"><i class="bi bi-chevron-left"></i> 前日</button>
-                        <button id="todayBtn" class="btn btn-outline-light flex-fill text-nowrap">今日</button>
-                        <button id="nextDayBtn" class="btn btn-outline-light flex-fill text-nowrap">後日 <i class="bi bi-chevron-right"></i></button>
-                        <button id="nextMonthBtn" class="btn btn-outline-light flex-fill text-nowrap">下月 <i class="bi bi-chevron-double-right"></i></button>
+                    <div id="obsDateButtons" class="d-flex gap-1 gap-md-2">
+                        <button id="prevMonthBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn"><i class="bi bi-chevron-double-left d-none d-sm-inline"></i> 上月</button>
+                        <button id="prevDayBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn"><i class="bi bi-chevron-left d-none d-sm-inline"></i> 前日</button>
+                        <button id="todayBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn">今日</button>
+                        <button id="nextDayBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn">後日 <i class="bi bi-chevron-right d-none d-sm-inline"></i></button>
+                        <button id="nextMonthBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn">下月 <i class="bi bi-chevron-double-right d-none d-sm-inline"></i></button>
                     </div>
                 </div>
 
@@ -126,9 +126,9 @@
     </div>
 
     <!-- Chart Container -->
-    <div class="card bg-dark border-secondary shadow-sm overflow-hidden chart-card">
-        <div class="card-body p-0">
-            <div id="chart"></div>
+    <div class="card bg-dark border-secondary shadow-sm overflow-hidden chart-card flex-grow-1 d-flex flex-column" style="min-height: 300px;">
+        <div class="card-body p-0 position-relative flex-grow-1">
+            <div id="chart" class="position-absolute top-0 start-0 w-100 h-100"></div>
         </div>
     </div>
 </div>

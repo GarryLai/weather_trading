@@ -460,10 +460,14 @@ document.getElementById('searchBtn').addEventListener('click', updateChart);
     });
 });
 
-// 處理視窗大小改變
-window.addEventListener('resize', () => {
-    chart.applyOptions({ width: document.getElementById('chart').offsetWidth });
+// 處理視窗大小與容器改變
+const chartContainer = document.getElementById('chart');
+const resizeObserver = new ResizeObserver(entries => {
+    if (entries.length === 0 || entries[0].target !== chartContainer) return;
+    const newRect = entries[0].contentRect;
+    chart.applyOptions({ width: newRect.width, height: newRect.height });
 });
+resizeObserver.observe(chartContainer);
 
 // 日期按鈕功能
 function adjustDate(dayDiff, monthDiff) {
