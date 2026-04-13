@@ -7,6 +7,8 @@ const chartOptions = {
     timeScale: {
         timeVisible: true,
         secondsVisible: false,
+        fixLeftEdge: true,
+        fixRightEdge: true,
     },
     rightPriceScale: {
         visible: true,
