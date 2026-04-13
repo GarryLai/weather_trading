@@ -456,9 +456,15 @@ function adjustDate(dayDiff, monthDiff) {
     updateChart();
 }
 
-document.getElementById('prevDayBtn').addEventListener('click', () => adjustDate(-1, 0));
-document.getElementById('nextDayBtn').addEventListener('click', () => adjustDate(1, 0));
 document.getElementById('prevMonthBtn').addEventListener('click', () => adjustDate(0, -1));
+document.getElementById('prevDayBtn').addEventListener('click', () => adjustDate(-1, 0));
+document.getElementById('todayBtn').addEventListener('click', () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('startDate').value = todayStr;
+    document.getElementById('endDate').value = todayStr;
+    updateChart();
+});
+document.getElementById('nextDayBtn').addEventListener('click', () => adjustDate(1, 0));
 document.getElementById('nextMonthBtn').addEventListener('click', () => adjustDate(0, 1));
 
 // 初始渲染
