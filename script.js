@@ -7,11 +7,17 @@ const chartOptions = {
     timeScale: {
         timeVisible: true,
         secondsVisible: false,
+    },
+    rightPriceScale: {
+        visible: true,
+    },
+    leftPriceScale: {
+        visible: false,
     }
 };
 const chart = LightweightCharts.createChart(document.getElementById('chart'), chartOptions);
 
-let currentSeries = null;
+let currentSeriesList = [];
 
 // 設定日期輸入框的預設值為今天
 const today = new Date().toISOString().split('T')[0];
@@ -242,53 +248,69 @@ async function fetchData() {
     const groupedData = {};
     
     combinedRawData.forEach(d => {
-        if(d.temp !== null) {
-            const dt = new Date(d.datetime);
-            // 基礎時間轉為本地 timezone +8 的絕對毫秒偏移量，方便進行日/時分組
-            const utcMs = dt.getTime();
-            const offsetMs = 8 * 60 * 60 * 1000;
-            const localMs = utcMs + offsetMs; 
-            
-            let bucketMs;
-            if (intervalText === '1m') {
-                bucketMs = localMs - (localMs % (60 * 1000));
-            } else if (intervalText === '1h') {
-                bucketMs = localMs - (localMs % (60 * 60 * 1000));
-            } else if (intervalText === '4h') {
-                bucketMs = localMs - (localMs % (4 * 60 * 60 * 1000));
-            } else if (intervalText === '1d') {
-                // 每日早上 8 點開盤 (收盤為隔日 07:59)
-                // 把時間減去 8 小時，讓 08:00 對齊到當日 00:00 來取模
-                const shiftedMs = localMs - (8 * 60 * 60 * 1000);
-                const dayMs = shiftedMs - (shiftedMs % (24 * 60 * 60 * 1000));
-                // 取回實際的 Bucket 開始時間 (+8hr)
-                bucketMs = dayMs + (8 * 60 * 60 * 1000);
-            } else if (intervalText === '1mo') {
-                // 每月1日 8 點開盤
-                const shiftedDt = new Date(localMs - (8 * 60 * 60 * 1000));
-                shiftedDt.setUTCDate(1);
-                shiftedDt.setUTCHours(0, 0, 0, 0);
-                bucketMs = shiftedDt.getTime() + (8 * 60 * 60 * 1000);
-            }
+        // Some records might have null temp but valid precipitation, so we process it unconditionally.
+        const dt = new Date(d.datetime);
+        // 基礎時間轉為本地 timezone +8 的絕對毫秒偏移量，方便進行日/時分組
+        const utcMs = dt.getTime();
+        const offsetMs = 8 * 60 * 60 * 1000;
+        const localMs = utcMs + offsetMs; 
+        
+        let bucketMs;
+        if (intervalText === '1m') {
+            bucketMs = localMs - (localMs % (60 * 1000));
+        } else if (intervalText === '1h') {
+            bucketMs = localMs - (localMs % (60 * 60 * 1000));
+        } else if (intervalText === '4h') {
+            bucketMs = localMs - (localMs % (4 * 60 * 60 * 1000));
+        } else if (intervalText === '1d') {
+            // 每日早上 8 點開盤 (收盤為隔日 07:59)
+            // 把時間減去 8 小時，讓 08:00 對齊到當日 00:00 來取模
+            const shiftedMs = localMs - (8 * 60 * 60 * 1000);
+            const dayMs = shiftedMs - (shiftedMs % (24 * 60 * 60 * 1000));
+            // 取回實際的 Bucket 開始時間 (+8hr)
+            bucketMs = dayMs + (8 * 60 * 60 * 1000);
+        } else if (intervalText === '1mo') {
+            // 每月1日 8 點開盤
+            const shiftedDt = new Date(localMs - (8 * 60 * 60 * 1000));
+            shiftedDt.setUTCDate(1);
+            shiftedDt.setUTCHours(0, 0, 0, 0);
+            bucketMs = shiftedDt.getTime() + (8 * 60 * 60 * 1000);
+        }
 
-            // 轉回 UTC timestamp 取出真實 unix 豪秒數
-            const trueUtcMs = bucketMs - offsetMs;
+        // 轉回 UTC timestamp 取出真實 unix 豪秒數
+        const trueUtcMs = bucketMs - offsetMs;
 
-            if (!groupedData[trueUtcMs]) {
-                groupedData[trueUtcMs] = {
-                    time: (trueUtcMs / 1000) + 8 * 3600,
-                    open: d.temp,
-                    high: d.temp,
-                    low: d.temp,
-                    close: d.temp,
-                    value: d.temp  // 折線圖用
-                };
-            } else {
-                groupedData[trueUtcMs].high = Math.max(groupedData[trueUtcMs].high, d.temp);
-                groupedData[trueUtcMs].low = Math.min(groupedData[trueUtcMs].low, d.temp);
-                groupedData[trueUtcMs].close = d.temp;
-                groupedData[trueUtcMs].value = d.temp;
+        if (!groupedData[trueUtcMs]) {
+            groupedData[trueUtcMs] = {
+                time: (trueUtcMs / 1000) + 8 * 3600,
+                open: d.temp,
+                high: d.temp,
+                low: d.temp,
+                close: d.temp,
+                value: d.temp,  // 折線圖用
+                rh_val: d.rh,
+                wd_val: d.wd,
+                ws_val: d.ws,
+                p_val: d.p,
+                pr_sum: (typeof d.pr === 'number' && !isNaN(d.pr)) ? d.pr : 0,
+                sr_val: d.sr
+            };
+        } else {
+            let g = groupedData[trueUtcMs];
+            if (d.temp !== null) {
+                g.high = Math.max(g.high ?? -Infinity, d.temp);
+                g.low = Math.min(g.low ?? Infinity, d.temp);
+                g.close = d.temp;
+                g.value = d.temp;
             }
+            if (d.rh !== null) g.rh_val = d.rh;
+            if (d.wd !== null) g.wd_val = d.wd;
+            if (d.ws !== null) g.ws_val = d.ws;
+            if (d.p !== null) g.p_val = d.p;
+            if (typeof d.pr === 'number' && !isNaN(d.pr)) {
+                g.pr_sum = (g.pr_sum || 0) + d.pr;
+            }
+            if (d.sr !== null) g.sr_val = d.sr;
         }
     });
     
@@ -301,30 +323,60 @@ async function updateChart() {
     const chartType = document.getElementById('chartType').value;
     const interval = document.getElementById('interval').value;
 
-    if (currentSeries) {
-        chart.removeSeries(currentSeries);
-        currentSeries = null;
+    if (currentSeriesList && currentSeriesList.length > 0) {
+        currentSeriesList.forEach(series => chart.removeSeries(series));
     }
+    currentSeriesList = [];
 
     const data = await fetchData(interval);
 
+    // Some non-temperature arrays just need specific values. We map them and filter out nulls/undefineds to prevent lightweight-charts from crashing.
     if (chartType === 'candlestick') {
-        currentSeries = chart.addCandlestickSeries({
+        const series = chart.addCandlestickSeries({
             upColor: '#ef5350',
             downColor: '#26a69a',
             borderVisible: false,
             wickUpColor: '#ef5350',
-            wickDownColor: '#26a69a'
+            wickDownColor: '#26a69a',
+            priceScaleId: 'right'
         });
-        currentSeries.setData(data);
+        series.setData(data.filter(d => d.open !== undefined && d.open !== null));
+        currentSeriesList.push(series);
     } else if (chartType === 'line') {
-        currentSeries = chart.addLineSeries({
-            color: '#2962FF',
-            lineWidth: 2,
-        });
-        // Line chart only needs time and value
-        const lineData = data.map(d => ({ time: d.time, value: d.value }));
-        currentSeries.setData(lineData);
+        const series = chart.addLineSeries({ color: '#2962FF', lineWidth: 2, priceScaleId: 'right' });
+        series.setData(data.filter(d => d.value !== undefined && d.value !== null).map(d => ({ time: d.time, value: d.value })));
+        currentSeriesList.push(series);
+    } else if (chartType === 'rh') {
+        const series = chart.addLineSeries({ color: '#00BCD4', lineWidth: 2, title: '相對濕度 (%)', priceScaleId: 'right' });
+        series.setData(data.filter(d => d.rh_val !== undefined && d.rh_val !== null).map(d => ({ time: d.time, value: d.rh_val })));
+        currentSeriesList.push(series);
+    } else if (chartType === 'ws_wd') {
+        chart.priceScale('left').applyOptions({ visible: true, borderColor: '#71649C' });
+        
+        const wsSeries = chart.addLineSeries({ color: '#FF5252', lineWidth: 2, title: '風速 (m/s)', priceScaleId: 'right' });
+        wsSeries.setData(data.filter(d => d.ws_val !== undefined && d.ws_val !== null).map(d => ({ time: d.time, value: d.ws_val })));
+        currentSeriesList.push(wsSeries);
+
+        const wdSeries = chart.addLineSeries({ color: '#888888', lineWidth: 1, title: '風向 (°)', priceScaleId: 'left' });
+        wdSeries.setData(data.filter(d => d.wd_val !== undefined && d.wd_val !== null).map(d => ({ time: d.time, value: d.wd_val })));
+        currentSeriesList.push(wdSeries);
+    } else if (chartType === 'p') {
+        const series = chart.addLineSeries({ color: '#FF9800', lineWidth: 2, title: '氣壓 (hPa)', priceScaleId: 'right' });
+        series.setData(data.filter(d => d.p_val !== undefined && d.p_val !== null).map(d => ({ time: d.time, value: d.p_val })));
+        currentSeriesList.push(series);
+    } else if (chartType === 'pr') {
+        const series = chart.addHistogramSeries({ color: '#2196F3', title: '累積降雨 (mm)', priceScaleId: 'right' });
+        series.setData(data.filter(d => d.pr_sum !== undefined && d.pr_sum !== null).map(d => ({ time: d.time, value: parseFloat(d.pr_sum.toFixed(2)) })));
+        currentSeriesList.push(series);
+    } else if (chartType === 'sr') {
+        const series = chart.addAreaSeries({ lineColor: '#FFC107', topColor: 'rgba(255, 193, 7, 0.4)', bottomColor: 'rgba(255, 193, 7, 0.0)', title: '太陽輻射 (W/m²)', priceScaleId: 'right' });
+        series.setData(data.filter(d => d.sr_val !== undefined && d.sr_val !== null).map(d => ({ time: d.time, value: d.sr_val })));
+        currentSeriesList.push(series);
+    }
+    
+    // Hide left axis if not drawing ws_wd
+    if (chartType !== 'ws_wd') {
+        chart.priceScale('left').applyOptions({ visible: false });
     }
     
     chart.timeScale().fitContent();
@@ -356,6 +408,12 @@ document.getElementById('dataType').addEventListener('change', () => {
         cityWrapper.classList.remove('d-none');
         forecastIntervalWrapper.classList.remove('d-none');
         obsElements.forEach(el => el.classList.add('d-none'));
+        
+        // Reset unsupported chart types for forecast
+        const cType = document.getElementById('chartType').value;
+        if (cType !== 'candlestick' && cType !== 'line') {
+            document.getElementById('chartType').value = 'line';
+        }
     } else {
         cityWrapper.classList.add('d-none');
         forecastIntervalWrapper.classList.add('d-none');
