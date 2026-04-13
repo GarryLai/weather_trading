@@ -14,6 +14,7 @@
         <select id="dataType">
             <option value="observation">觀測 (PBLAP)</option>
             <option value="forecast">預報 (CWA)</option>
+            <option value="openweathermap">預報 (OpenWeatherMap)</option>
         </select>
 
         <label for="city" id="cityLabel" style="display: none;">縣市：</label>
@@ -45,7 +46,8 @@
         <label for="forecastInterval" id="forecastIntervalLabel" style="display: none;">預報區間：</label>
         <select id="forecastInterval" style="display: none;">
             <option value="1d">日 (單日最高/低溫)</option>
-            <option value="6h" selected>逐6/12小時 (MinT/MaxT)</option>
+            <option value="6h" selected>逐6/12小時 (MinT/MaxT, CWA)</option>
+            <option value="1h">逐小時 (OpenWeatherMap)</option>
         </select>
 
         <label for="startDate">開始日期：</label>

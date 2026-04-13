@@ -139,6 +139,95 @@ async function fetchData() {
             document.getElementById('searchBtn').disabled = false;
             return [];
         }
+    } else if (dataType === 'openweathermap') {
+        const cityStr = document.getElementById('city').value;
+        const forecastInterval = document.getElementById('forecastInterval').value;
+        const apiKey = 'bd5e378503939ddaee76f12ad7a97608';
+        
+        document.getElementById('searchBtn').innerText = '載入中...';
+        document.getElementById('searchBtn').disabled = true;
+
+        try {
+            let result = [];
+            
+            if (forecastInterval === '1d') {
+                const resp = await fetch(`https://api.openweathermap.org/data/2.5/forecast/daily?q=${encodeURIComponent(cityStr)},TW&units=metric&cnt=16&appid=${apiKey}&lang=zh_tw`);
+                if (!resp.ok) throw new Error("OpenWeatherMap Daily API 錯誤");
+                const data = await resp.json();
+                
+                let prevMean = null;
+                for (let i = 0; i < data.list.length; i++) {
+                    const item = data.list[i];
+                    // dt 為 UTC timestamp
+                    const timeSec = item.dt + 8 * 3600; 
+                    
+                    const maxTemp = item.temp.max;
+                    const minTemp = item.temp.min;
+                    const currentMean = item.temp.day;
+                    
+                    let isRising = true;
+                    if (prevMean !== null && currentMean < prevMean) isRising = false;
+                    
+                    result.push({
+                        time: timeSec,
+                        open: isRising ? minTemp : maxTemp,
+                        high: maxTemp,
+                        low: minTemp,
+                        close: isRising ? maxTemp : minTemp,
+                        value: currentMean
+                    });
+                    prevMean = currentMean;
+                }
+            } else if (forecastInterval === '1h') {
+                const resp = await fetch(`https://pro.openweathermap.org/data/2.5/forecast/hourly?q=${encodeURIComponent(cityStr)},TW&units=metric&appid=${apiKey}&lang=zh_tw`);
+                let data;
+                if (!resp.ok) {
+                    const respSub = await fetch(`https://api.openweathermap.org/data/2.5/forecast/hourly?q=${encodeURIComponent(cityStr)},TW&units=metric&appid=${apiKey}&lang=zh_tw`);
+                    if(!respSub.ok) {
+                        const fallbackResp = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(cityStr)},TW&units=metric&appid=${apiKey}&lang=zh_tw`);
+                        if(!fallbackResp.ok) throw new Error("OpenWeatherMap Hourly API 錯誤");
+                        data = await fallbackResp.json();
+                    } else {
+                        data = await respSub.json();
+                    }
+                } else {
+                    data = await resp.json();
+                }
+
+                let prevMean = null;
+                for (let i = 0; i < data.list.length; i++) {
+                    const item = data.list[i];
+                    const timeSec = item.dt + 8 * 3600; 
+                    const currentMean = item.main.temp;
+                    const maxTemp = item.main.temp_max || currentMean;
+                    const minTemp = item.main.temp_min || currentMean;
+                    
+                    let isRising = true;
+                    if (prevMean !== null && currentMean < prevMean) isRising = false;
+                    
+                    result.push({
+                        time: timeSec,
+                        open: isRising ? minTemp : maxTemp,
+                        high: maxTemp,
+                        low: minTemp,
+                        close: isRising ? maxTemp : minTemp,
+                        value: currentMean
+                    });
+                    prevMean = currentMean;
+                }
+            }
+
+            document.getElementById('searchBtn').innerText = '查詢資料';
+            document.getElementById('searchBtn').disabled = false;
+            
+            return result.sort((a, b) => a.time - b.time);
+            
+        } catch (err) {
+            alert(err.message);
+            document.getElementById('searchBtn').innerText = '查詢資料';
+            document.getElementById('searchBtn').disabled = false;
+            return [];
+        }
     }
 
     const startDateStr = document.getElementById('startDate').value;
@@ -279,7 +368,24 @@ async function updateChart() {
 
 // 監聽變更與點擊事件
 document.getElementById('dataType').addEventListener('change', () => {
-    const isForecast = document.getElementById('dataType').value === 'forecast';
+    const dataType = document.getElementById('dataType').value;
+    const isForecast = dataType === 'forecast' || dataType === 'openweathermap';
+    
+    // 依據資料來源動態調整預報區間選單
+    const forecastIntervalSelect = document.getElementById('forecastInterval');
+    Array.from(forecastIntervalSelect.options).forEach(opt => {
+        if (dataType === 'forecast') {
+            opt.style.display = opt.value === '1h' ? 'none' : 'block';
+        } else if (dataType === 'openweathermap') {
+            opt.style.display = opt.value === '6h' ? 'none' : 'block';
+        } else {
+            opt.style.display = 'block';
+        }
+    });
+    
+    if (dataType === 'forecast' && forecastIntervalSelect.value === '1h') forecastIntervalSelect.value = '6h';
+    if (dataType === 'openweathermap' && forecastIntervalSelect.value === '6h') forecastIntervalSelect.value = '1h';
+
     // 切換是否顯示地區選項
     document.getElementById('cityLabel').style.display = isForecast ? 'inline-block' : 'none';
     document.getElementById('city').style.display = isForecast ? 'inline-block' : 'none';
