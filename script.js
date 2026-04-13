@@ -21,13 +21,14 @@ document.getElementById('endDate').value = today;
 // 從 API 獲取資料
 async function fetchData() {
     const dataType = document.getElementById('dataType').value;
+    const searchBtn = document.getElementById('searchBtn');
     
     if (dataType === 'forecast') {
         const city = document.getElementById('city').value;
         const forecastInterval = document.getElementById('forecastInterval').value;
         
-        document.getElementById('searchBtn').innerText = '載入中...';
-        document.getElementById('searchBtn').disabled = true;
+        searchBtn.innerText = '載入中...';
+        searchBtn.disabled = true;
 
         try {
             const response = await fetch('https://cwaopendata.s3.ap-northeast-1.amazonaws.com/Forecast/F-C0032-005.json');
@@ -128,15 +129,15 @@ async function fetchData() {
                 }
             }
 
-            document.getElementById('searchBtn').innerText = '查詢資料';
-            document.getElementById('searchBtn').disabled = false;
+            searchBtn.innerText = '查詢資料';
+            searchBtn.disabled = false;
             
             return result.sort((a, b) => a.time - b.time);
             
         } catch (err) {
             alert(err.message);
-            document.getElementById('searchBtn').innerText = '查詢資料';
-            document.getElementById('searchBtn').disabled = false;
+            searchBtn.innerText = '查詢資料';
+            searchBtn.disabled = false;
             return [];
         }
     } else if (dataType === 'openweathermap') {
@@ -144,8 +145,8 @@ async function fetchData() {
         const forecastInterval = document.getElementById('forecastInterval').value;
         const apiKey = 'bd5e378503939ddaee76f12ad7a97608';
         
-        document.getElementById('searchBtn').innerText = '載入中...';
-        document.getElementById('searchBtn').disabled = true;
+        searchBtn.innerText = '載入中...';
+        searchBtn.disabled = true;
 
         try {
             let result = [];
@@ -180,15 +181,15 @@ async function fetchData() {
                 }
             }
 
-            document.getElementById('searchBtn').innerText = '查詢資料';
-            document.getElementById('searchBtn').disabled = false;
+            searchBtn.innerText = '查詢資料';
+            searchBtn.disabled = false;
             
             return result.sort((a, b) => a.time - b.time);
             
         } catch (err) {
             alert(err.message);
-            document.getElementById('searchBtn').innerText = '查詢資料';
-            document.getElementById('searchBtn').disabled = false;
+            searchBtn.innerText = '查詢資料';
+            searchBtn.disabled = false;
             return [];
         }
     }
@@ -197,7 +198,7 @@ async function fetchData() {
     const endDateStr = document.getElementById('endDate').value;
     const start = new Date(startDateStr);
     const end = new Date(endDateStr);
-
+    
     if (start > end) {
         alert("開始日期不能晚於結束日期！");
         return [];
@@ -209,8 +210,8 @@ async function fetchData() {
     let combinedRawData = [];
 
     // 處理超過 45 天需拆包 (遞迴 / 迴圈分批查詢)
-    document.getElementById('searchBtn').innerText = '載入中...';
-    document.getElementById('searchBtn').disabled = true;
+    searchBtn.innerText = '載入中...';
+    searchBtn.disabled = true;
 
     try {
         while (totalDays > 0) {
@@ -234,8 +235,8 @@ async function fetchData() {
         alert(err.message);
     }
 
-    document.getElementById('searchBtn').innerText = '查詢資料';
-    document.getElementById('searchBtn').disabled = false;
+    searchBtn.innerText = '查詢資料';
+    searchBtn.disabled = false;
     
     const intervalText = document.getElementById('interval').value;
     const groupedData = {};
@@ -346,20 +347,20 @@ document.getElementById('dataType').addEventListener('change', () => {
     
     if (dataType === 'openweathermap' && forecastIntervalSelect.value === '6h') forecastIntervalSelect.value = '1d';
 
-    // 切換是否顯示地區選項
-    document.getElementById('cityLabel').style.display = isForecast ? 'inline-block' : 'none';
-    document.getElementById('city').style.display = isForecast ? 'inline-block' : 'none';
-    document.getElementById('forecastIntervalLabel').style.display = isForecast ? 'inline-block' : 'none';
-    document.getElementById('forecastInterval').style.display = isForecast ? 'inline-block' : 'none';
+    // 切換顯示狀態，使用 Bootstrap 的 d-none 取代寫死的 style.display
+    const cityWrapper = document.getElementById('cityWrapper');
+    const forecastIntervalWrapper = document.getElementById('forecastIntervalWrapper');
+    const obsElements = document.querySelectorAll('.obs-only');
     
-    // 預報時隱藏開始結束日期及統計區間
-    document.querySelector('label[for="startDate"]').style.display = isForecast ? 'none' : 'inline-block';
-    document.getElementById('startDate').style.display = isForecast ? 'none' : 'inline-block';
-    document.querySelector('label[for="endDate"]').style.display = isForecast ? 'none' : 'inline-block';
-    document.getElementById('endDate').style.display = isForecast ? 'none' : 'inline-block';
-    document.getElementById('obsDateButtons').style.display = isForecast ? 'none' : 'inline-block';
-    document.querySelector('label[for="interval"]').style.display = isForecast ? 'none' : 'inline-block';
-    document.getElementById('interval').style.display = isForecast ? 'none' : 'inline-block';
+    if (isForecast) {
+        cityWrapper.classList.remove('d-none');
+        forecastIntervalWrapper.classList.remove('d-none');
+        obsElements.forEach(el => el.classList.add('d-none'));
+    } else {
+        cityWrapper.classList.add('d-none');
+        forecastIntervalWrapper.classList.add('d-none');
+        obsElements.forEach(el => el.classList.remove('d-none'));
+    }
     
     updateChart();
 });
