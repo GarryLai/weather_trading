@@ -90,7 +90,7 @@
                 </div>
 
                 <!-- 觀測專用按鈕，放置在新的一列 -->
-                <div class="col-lg-4 col-md-8 col-sm-12 obs-only">
+                <div class="col-lg-4 col-md-12 col-sm-12 obs-only mt-3 mt-lg-0">
                     <label class="form-label d-none d-lg-block">&nbsp;</label>
                     <div id="obsDateButtons" class="d-flex gap-1 gap-md-2">
                         <button id="prevMonthBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn"><i class="bi bi-chevron-double-left d-none d-sm-inline"></i> 上月</button>
@@ -101,20 +101,24 @@
                     </div>
                 </div>
 
-                <!-- 控制群組：圖表設定與查詢 -->
+                <!-- 控制群組：氣象變數 -->
                 <div class="col-lg-2 col-md-4 col-sm-6">
-                    <label for="chartType" class="form-label text-light">圖表類型 / 變數</label>
-                    <select id="chartType" class="form-select bg-dark text-white border-secondary">
-                        <option value="candlestick">溫度 - K線 (高/低/開/收)</option>
-                        <option value="line">溫度 - 折線 (平均溫度)</option>
-                        <option value="candlestick_rh" class="obs-only">相對濕度 - K線</option>
-                        <option value="rh" class="obs-only">相對濕度 - 折線</option>
-                        <option value="candlestick_ws" class="obs-only">風速 - K線</option>
-                        <option value="ws_wd" class="obs-only">風向與風速 - 雙軸</option>
-                        <option value="candlestick_p" class="obs-only">氣壓 - K線</option>
-                        <option value="p" class="obs-only">氣壓 - 折線</option>
-                        <option value="pr" class="obs-only">累積降雨 - 直方圖</option>
-                        <option value="sr" class="obs-only">太陽輻射 - 面積圖</option>
+                    <label for="weatherVariable" class="form-label text-light">氣象變數</label>
+                    <select id="weatherVariable" class="form-select bg-dark text-white border-secondary">
+                        <option value="temp">溫度</option>
+                        <option value="rh" class="obs-only">相對濕度</option>
+                        <option value="ws" class="obs-only">風速風向</option>
+                        <option value="p" class="obs-only">氣壓</option>
+                        <option value="pr" class="obs-only">累積降雨</option>
+                        <option value="sr" class="obs-only">太陽輻射</option>
+                    </select>
+                </div>
+
+                <!-- 控制群組：圖表類型 -->
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <label for="chartStyle" class="form-label text-light">圖表類型</label>
+                    <select id="chartStyle" class="form-select bg-dark text-white border-secondary">
+                        <!-- 選項會透過 JS 動態產生 -->
                     </select>
                 </div>
 

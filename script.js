@@ -373,7 +373,7 @@ async function fetchData() {
 }
 
 async function updateChart() {
-    const chartType = document.getElementById('chartType').value;
+    const chartType = document.getElementById('chartStyle').value;
     const interval = document.getElementById('interval').value;
 
     if (currentSeriesList && currentSeriesList.length > 0) {
@@ -517,9 +517,14 @@ document.getElementById('dataType').addEventListener('change', () => {
         obsElements.forEach(el => el.classList.add('d-none'));
         
         // Reset unsupported chart types for forecast
-        const cType = document.getElementById('chartType').value;
+        if (document.getElementById('weatherVariable').value !== 'temp') {
+            document.getElementById('weatherVariable').value = 'temp';
+            updateChartStyleOptions();
+        }
+        
+        const cType = document.getElementById('chartStyle').value;
         if (cType !== 'candlestick' && cType !== 'line') {
-            document.getElementById('chartType').value = 'line';
+            document.getElementById('chartStyle').value = 'line';
         }
     } else {
         cityWrapper.classList.add('d-none');
@@ -529,9 +534,77 @@ document.getElementById('dataType').addEventListener('change', () => {
     
     updateChart();
 });
+
+const chartStyleOptions = {
+    temp: [
+        { value: 'candlestick', text: 'K線 (高/低/開/收)' },
+        { value: 'line', text: '折線 (平均溫度)' }
+    ],
+    rh: [
+        { value: 'candlestick_rh', text: 'K線 (高/低/開/收)' },
+        { value: 'rh', text: '折線 (相對濕度)' }
+    ],
+    ws: [
+        { value: 'candlestick_ws', text: 'K線 (風速)' },
+        { value: 'ws_wd', text: '雙軸 (風向與風速)' }
+    ],
+    p: [
+        { value: 'candlestick_p', text: 'K線 (高/低/開/收)' },
+        { value: 'p', text: '折線 (平均氣壓)' }
+    ],
+    pr: [
+        { value: 'pr', text: '直方圖' }
+    ],
+    sr: [
+        { value: 'sr', text: '面積圖' }
+    ]
+};
+
+function updateChartStyleOptions() {
+    const weatherVariable = document.getElementById('weatherVariable').value;
+    const chartStyleSelect = document.getElementById('chartStyle');
+    const previousStyle = chartStyleSelect.value;
+    
+    chartStyleSelect.innerHTML = '';
+    const options = chartStyleOptions[weatherVariable] || chartStyleOptions['temp'];
+    
+    let optionsHasPreviousValue = false;
+
+    options.forEach(opt => {
+        const optionEl = document.createElement('option');
+        optionEl.value = opt.value;
+        optionEl.innerText = opt.text;
+        chartStyleSelect.appendChild(optionEl);
+        
+        if (opt.value === previousStyle) optionsHasPreviousValue = true;
+    });
+
+    if (optionsHasPreviousValue) {
+        chartStyleSelect.value = previousStyle;
+    } else {
+        // Fallback: try to select a K-line if we were on one, else select first option
+        const isCandlestickPref = previousStyle && previousStyle.startsWith('candlestick');
+        if (isCandlestickPref) {
+            const fallbackCandlestick = options.find(o => o.value.startsWith('candlestick'));
+            if (fallbackCandlestick) {
+                chartStyleSelect.value = fallbackCandlestick.value;
+            } else {
+                chartStyleSelect.value = options[0].value;
+            }
+        } else {
+            chartStyleSelect.value = options[0].value;
+        }
+    }
+}
+
+document.getElementById('weatherVariable').addEventListener('change', () => {
+    updateChartStyleOptions();
+    updateChart();
+});
+
 document.getElementById('city').addEventListener('change', updateChart);
 document.getElementById('forecastInterval').addEventListener('change', updateChart);
-document.getElementById('chartType').addEventListener('change', updateChart);
+document.getElementById('chartStyle').addEventListener('change', updateChart);
 document.getElementById('interval').addEventListener('change', updateChart);
 document.getElementById('searchBtn').addEventListener('click', updateChart);
 
@@ -588,4 +661,5 @@ document.getElementById('nextDayBtn').addEventListener('click', () => adjustDate
 document.getElementById('nextMonthBtn').addEventListener('click', () => adjustDate(0, 1));
 
 // 初始渲染
+updateChartStyleOptions();
 updateChart();
