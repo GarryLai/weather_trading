@@ -428,6 +428,15 @@ document.getElementById('chartType').addEventListener('change', updateChart);
 document.getElementById('interval').addEventListener('change', updateChart);
 document.getElementById('searchBtn').addEventListener('click', updateChart);
 
+// 監聽日期輸入框的 Enter 鍵事件
+['startDate', 'endDate'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            updateChart();
+        }
+    });
+});
+
 // 處理視窗大小改變
 window.addEventListener('resize', () => {
     chart.applyOptions({ width: document.getElementById('chart').offsetWidth });
