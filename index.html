@@ -12,16 +12,15 @@
 <body class="d-flex flex-column vh-100 m-0 overflow-hidden">
 
     <!-- Top Toolbar -->
-    <header class="tv-toolbar tv-top-toolbar d-flex align-items-center px-3 border-bottom border-secondary border-opacity-25 flex-shrink-0 z-3 position-relative">
+    <header class="tv-toolbar tv-top-toolbar d-flex align-items-center px-1 px-md-3 border-bottom border-secondary border-opacity-25 flex-shrink-0 z-3 position-relative flex-wrap py-2 py-md-0" style="min-height: 48px; height: auto;">
         <!-- Logo / Title -->
-        <div class="d-flex align-items-center me-3">
-            <i class="bi bi-cloud-sun fs-5 text-primary me-2"></i>
+        <div class="d-flex align-items-center me-2 me-md-3">
+            <i class="bi bi-cloud-sun fs-5 text-primary me-1 me-md-2"></i>
             <span class="fw-bold fs-6 text-light d-none d-md-block">天氣看版</span>
         </div>
-        <div class="tv-divider me-3 d-none d-md-block"></div>
+        <div class="tv-divider me-2 me-md-3 d-none d-md-block"></div>
 
-        <!-- Controls container -->
-        <div class="d-flex align-items-center flex-grow-1 overflow-x-auto text-nowrap gap-1" style="scrollbar-width: none;">
+            <div class="d-flex align-items-center flex-grow-1 flex-wrap gap-1" style="scrollbar-width: none;">
             <select id="dataType" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto fw-medium shadow-none">
                 <option value="observation" class="bg-dark">觀測 (PBLAP)</option>
                 <option value="forecast" class="bg-dark">預報 (CWA)</option>
@@ -67,13 +66,14 @@
                 <div class="tv-divider mx-1"></div>
             </div>
 
-            <!-- 觀測專用 -->
-            <div class="d-flex align-items-center gap-1 obs-only">
-                <input type="date" id="startDate" class="tv-form-control form-control form-control-sm bg-transparent border-0 text-light w-auto shadow-none" style="min-width: 120px;">
-                <span class="text-secondary opacity-50 px-1">-</span>
-                <input type="date" id="endDate" class="tv-form-control form-control form-control-sm bg-transparent border-0 text-light w-auto shadow-none" style="min-width: 120px;">
+            <div class="d-flex flex-wrap align-items-center gap-1 obs-only">
+                <div class="d-flex align-items-center text-nowrap">
+                    <input type="date" id="startDate" class="tv-form-control form-control form-control-sm bg-transparent border-0 text-light shadow-none px-1" style="width: 110px;">
+                    <span class="text-secondary opacity-50 px-1">-</span>
+                    <input type="date" id="endDate" class="tv-form-control form-control form-control-sm bg-transparent border-0 text-light shadow-none px-1" style="width: 110px;">
+                </div>
                 
-                <div class="tv-divider mx-1"></div>
+                <div class="tv-divider mx-1 d-none d-md-block"></div>
                 
                 <select id="interval" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto shadow-none fw-medium">
                     <option value="1m" class="bg-dark">1m</option>
@@ -86,17 +86,19 @@
                 <div class="tv-divider mx-1 d-none d-md-block"></div>
                 
                 <!-- 日期按鈕 -->
-                <button id="prevMonthBtn" class="tv-btn btn btn-sm text-secondary date-btn d-none d-md-flex" title="上月"><i class="bi bi-chevron-double-left"></i></button>
-                <button id="prevDayBtn" class="tv-btn btn btn-sm text-secondary date-btn" title="前日"><i class="bi bi-chevron-left"></i></button>
-                <button id="todayBtn" class="tv-btn btn btn-sm text-secondary date-btn px-2 fw-medium">Today</button>
-                <button id="nextDayBtn" class="tv-btn btn btn-sm text-secondary date-btn" title="後日"><i class="bi bi-chevron-right"></i></button>
-                <button id="nextMonthBtn" class="tv-btn btn btn-sm text-secondary date-btn d-none d-md-flex" title="下月"><i class="bi bi-chevron-double-right"></i></button>
+                <div class="d-flex align-items-center text-nowrap">
+                    <button id="prevMonthBtn" class="tv-btn btn btn-sm text-secondary date-btn d-none d-md-flex" title="上月"><i class="bi bi-chevron-double-left"></i></button>
+                    <button id="prevDayBtn" class="tv-btn btn btn-sm text-secondary date-btn" title="前日"><i class="bi bi-chevron-left"></i></button>
+                    <button id="todayBtn" class="tv-btn btn btn-sm text-secondary date-btn px-2 fw-medium">Today</button>
+                    <button id="nextDayBtn" class="tv-btn btn btn-sm text-secondary date-btn" title="後日"><i class="bi bi-chevron-right"></i></button>
+                    <button id="nextMonthBtn" class="tv-btn btn btn-sm text-secondary date-btn d-none d-md-flex" title="下月"><i class="bi bi-chevron-double-right"></i></button>
+                </div>
 
                 <div class="tv-divider mx-1 d-none d-md-block"></div>
             </div>
 
             <!-- 共用變數及圖表類型 -->
-            <div class="d-flex align-items-center gap-1">
+            <div class="d-flex flex-wrap align-items-center gap-1 mt-1 mt-md-0">
                 <select id="weatherVariable" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto shadow-none">
                     <option value="temp" class="bg-dark">溫度</option>
                     <option value="rh" class="bg-dark obs-only">相對濕度</option>

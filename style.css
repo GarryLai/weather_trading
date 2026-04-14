@@ -16,8 +16,8 @@ body {
 
 .bg-tv-main { background-color: var(--tv-bg); }
 .tv-toolbar { background-color: var(--tv-toolbar); }
-.tv-top-toolbar { height: 48px; }
-.tv-bottom-toolbar { height: 32px; }
+.tv-top-toolbar { min-height: 48px; height: auto; padding-top: 8px; padding-bottom: 8px; }
+.tv-bottom-toolbar { min-height: 32px; height: auto; flex-wrap: wrap; }
 .tv-left-sidebar { width: 44px; }
 .tv-right-sidebar { width: 44px; }
 
