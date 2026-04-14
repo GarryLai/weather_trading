@@ -770,8 +770,23 @@ document.getElementById('fullscreenBtn')?.addEventListener('click', () => {
 // 圖表截圖分享
 document.getElementById('screenshotBtn')?.addEventListener('click', () => {
     if (!chart) return;
-    const canvas = chart.takeScreenshot();
-    const url = canvas.toDataURL('image/png');
+    const chartCanvas = chart.takeScreenshot();
+    const overlayCanvas = document.getElementById('drawingCanvas');
+    
+    // 建立新的畫布以合併圖表與手繪線條
+    const mergedCanvas = document.createElement('canvas');
+    mergedCanvas.width = chartCanvas.width;
+    mergedCanvas.height = chartCanvas.height;
+    const mCtx = mergedCanvas.getContext('2d');
+    
+    // 1. 繪製底部圖表
+    mCtx.drawImage(chartCanvas, 0, 0);
+    // 2. 繪製手繪疊加層 (縮放匹配截圖的尺寸，避免 pixelRatio 造成的誤差)
+    if (overlayCanvas) {
+        mCtx.drawImage(overlayCanvas, 0, 0, mergedCanvas.width, mergedCanvas.height);
+    }
+    
+    const url = mergedCanvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url;
     const symbol = document.getElementById('chartSymbolTitle').innerText.replace(/\s+/g, '_');
