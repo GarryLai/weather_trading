@@ -993,6 +993,87 @@ function redrawCanvas() {
     if (ongoingDrawing) renderShape(ongoingDrawing, activeSeries, ctx);
 }
 
+
+function formatLogicalToDateStr(logical) {
+    if (!globalCache.data || globalCache.data.length === 0) return '';
+    const idx = Math.max(0, Math.min(globalCache.data.length - 1, Math.round(logical)));
+    const d = globalCache.data[idx];
+    if (!d) return '';
+    // 將調整過的 unix time 轉回當地字串
+    const date = new Date((d.time - 8 * 3600) * 1000);
+    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+    const dd = date.getDate().toString().padStart(2, '0');
+    const HH = date.getHours().toString().padStart(2, '0');
+    const mm_time = date.getMinutes().toString().padStart(2, '0');
+    // 如果是 00:00 可省略，但簡單起見全顯示
+    return `${mm}/${dd} ${HH}:${mm_time}`;
+}
+
+function drawAxisHighlight(ctx, p1, p2, cx1, cy1, cx2, cy2, baseColor) {
+    // 基礎參數
+    const xMin = Math.min(cx1, cx2);
+    const xMax = Math.max(cx1, cx2);
+    const yMin = Math.min(cy1, cy2);
+    const yMax = Math.max(cy1, cy2);
+    const rightAxisW = 56;  // 預設坐標軸的寬度預估值
+    const bottomAxisH = 26; // 預設時間軸的高度預估值
+
+    // 1. 畫出對應到座標軸的虛線
+    ctx.save();
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = 1;
+
+    // Y 軸對齊線 (往右畫到底)
+    ctx.moveTo(cx1, cy1); ctx.lineTo(canvas.width, cy1);
+    ctx.moveTo(cx2, cy2); ctx.lineTo(canvas.width, cy2);
+
+    // X 軸對齊線 (往下畫到底)
+    ctx.moveTo(cx1, cy1); ctx.lineTo(cx1, canvas.height);
+    ctx.moveTo(cx2, cy2); ctx.lineTo(cx2, canvas.height);
+    ctx.stroke();
+    ctx.restore();
+
+    // 2. 在座標軸上繪製標籤區塊
+    ctx.save();
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const drawLabel = (x, y, w, h, text, isYAxis) => {
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = '#ffffff';
+        if (isYAxis) {
+            ctx.fillText(text, x + w / 2 - 2, y + h / 2);
+        } else {
+            ctx.fillText(text, x + w / 2, y + h / 2);
+        }
+    };
+
+    // 繪製 X 軸區間的高亮背景
+    ctx.fillStyle = baseColor;
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect(xMin, canvas.height - bottomAxisH, xMax - xMin, bottomAxisH);
+    
+    // 繪製 Y 軸區間的高亮背景
+    ctx.fillRect(canvas.width - rightAxisW, yMin, rightAxisW, yMax - yMin);
+    ctx.globalAlpha = 1.0;
+
+    // Y 軸的具體價格標籤
+    drawLabel(canvas.width - rightAxisW, cy1 - 10, rightAxisW, 20, p1.price.toFixed(2), true);
+    drawLabel(canvas.width - rightAxisW, cy2 - 10, rightAxisW, 20, p2.price.toFixed(2), true);
+
+    // X 軸的具體時間標籤
+    const t1Text = formatLogicalToDateStr(p1.time);
+    const t2Text = formatLogicalToDateStr(p2.time);
+    drawLabel(cx1 - 35, canvas.height - bottomAxisH, 70, bottomAxisH, t1Text, false);
+    drawLabel(cx2 - 35, canvas.height - bottomAxisH, 70, bottomAxisH, t2Text, false);
+    
+    ctx.restore();
+}
+
 function renderShape(shape, series, ctx) {
     if (shape.type === 'line' || shape.type === 'pencil') {
         ctx.beginPath();
@@ -1012,6 +1093,30 @@ function renderShape(shape, series, ctx) {
         ctx.strokeStyle = '#2962FF';
         ctx.lineWidth = shape.type === 'pencil' ? 2 : 2;
         ctx.stroke();
+
+        // 幫趨勢線加上 TradingView-style 的起點與終點小圓圈及座標軸投影
+        if (shape.type === 'line' && shape.points.length === 2) {
+            const p1 = shape.points[0];
+            const p2 = shape.points[1];
+            const cx1 = chart.timeScale().logicalToCoordinate(p1.time);
+            const cy1 = series.priceToCoordinate(p1.price);
+            const cx2 = chart.timeScale().logicalToCoordinate(p2.time);
+            const cy2 = series.priceToCoordinate(p2.price);
+            
+            if (cx1 !== null && cy1 !== null && cx2 !== null && cy2 !== null) {
+                // 繪製座標軸範圍及反白
+                drawAxisHighlight(ctx, p1, p2, cx1, cy1, cx2, cy2, '#2962FF');
+                
+                ctx.beginPath();
+                ctx.arc(cx1, cy1, 4, 0, 2 * Math.PI);
+                ctx.arc(cx2, cy2, 4, 0, 2 * Math.PI);
+                ctx.fillStyle = '#131722';
+                ctx.fill();
+                ctx.strokeStyle = '#2962FF';
+                ctx.stroke();
+            }
+        }
+
     } else if (shape.type === 'ruler') {
         const cx1 = chart.timeScale().logicalToCoordinate(shape.start.time);
         const cy1 = series.priceToCoordinate(shape.start.price);
@@ -1019,16 +1124,84 @@ function renderShape(shape, series, ctx) {
         const cy2 = series.priceToCoordinate(shape.end.price);
         
         if (cx1 !== null && cy1 !== null && cx2 !== null && cy2 !== null) {
-            ctx.fillStyle = 'rgba(41, 98, 255, 0.2)';
-            ctx.fillRect(Math.min(cx1, cx2), Math.min(cy1, cy2), Math.abs(cx2 - cx1), Math.abs(cy2 - cy1));
-            ctx.strokeStyle = '#2962FF';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(Math.min(cx1, cx2), Math.min(cy1, cy2), Math.abs(cx2 - cx1), Math.abs(cy2 - cy1));
+            const priceDiff = shape.end.price - shape.start.price;
+            const isUp = priceDiff >= 0;
+            const color = isUp ? 'rgba(239, 83, 80, 1)' : 'rgba(38, 166, 154, 1)';
+            const bgColor = isUp ? 'rgba(239, 83, 80, 0.15)' : 'rgba(38, 166, 154, 0.15)';
             
-            // Draw text
-            ctx.fillStyle = '#fff';
-            ctx.font = '12px Arial';
-            ctx.fillText(`Δ Price: ${(shape.end.price - shape.start.price).toFixed(2)}`, Math.min(cx1, cx2) + 5, Math.min(cy1, cy2) + 15);
+            // 繪製座標軸投影與高亮反白 (沿用 TradingView 習慣色)
+            drawAxisHighlight(ctx, shape.start, shape.end, cx1, cy1, cx2, cy2, isUp ? '#26a69a' : '#ef5350');
+            
+            // 繪製半透明測量區域
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(Math.min(cx1, cx2), Math.min(cy1, cy2), Math.abs(cx2 - cx1), Math.abs(cy2 - cy1));
+            
+            // 繪製連接線
+            ctx.beginPath();
+            ctx.moveTo(cx1, cy1);
+            ctx.lineTo(cx2, cy2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // 繪製端點圓圈
+            ctx.beginPath();
+            ctx.arc(cx1, cy1, 4, 0, 2 * Math.PI);
+            ctx.arc(cx2, cy2, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = '#131722';
+            ctx.fill();
+            ctx.stroke();
+            
+            // 計算數值以顯示在標籤上
+            const bars = Math.round(Math.abs(shape.end.time - shape.start.time));
+            const sign = isUp ? '+' : '';
+            const startPriceNum = shape.start.price === 0 ? 1 : shape.start.price;
+            const pct = ((priceDiff / Math.abs(startPriceNum)) * 100).toFixed(2);
+            
+            let timeDiffStr = "";
+            if (globalCache.data && globalCache.data.length > 0) {
+                const sIdx = Math.max(0, Math.min(globalCache.data.length - 1, Math.round(shape.start.time)));
+                const eIdx = Math.max(0, Math.min(globalCache.data.length - 1, Math.round(shape.end.time)));
+                if (globalCache.data[sIdx] && globalCache.data[eIdx]) {
+                    const secDiff = Math.abs(globalCache.data[eIdx].time - globalCache.data[sIdx].time);
+                    const minDiff = secDiff / 60;
+                    if (minDiff > 0) {
+                        if (minDiff < 60) {
+                            timeDiffStr = `, ${Math.round(minDiff)}分鐘`;
+                        } else if (minDiff < 1440) {
+                            timeDiffStr = `, ${Math.round(minDiff / 60)}小時`;
+                        } else if (minDiff < 43200) {
+                            timeDiffStr = `, ${Math.round(minDiff / 1440)}天`;
+                        } else {
+                            timeDiffStr = `, ${Math.round(minDiff / 43200)}個月`;
+                        }
+                    }
+                }
+            }
+            
+            const line1 = `${sign}${priceDiff.toFixed(2)} (${sign}${pct}%)`;
+            const line2 = `${bars} 根K線${timeDiffStr}`;
+            
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif';
+            const m1 = ctx.measureText(line1);
+            const m2 = ctx.measureText(line2);
+            const boxWidth = Math.max(m1.width, m2.width) + 16;
+            const boxHeight = 44;
+            
+            // 將標籤放置在終點旁邊
+            const boxX = cx2 + (cx2 >= cx1 ? 15 : -boxWidth - 15);
+            const boxY = cy2 + (cy2 >= cy1 ? 15 : -boxHeight - 15);
+            
+            // 標籤背景
+            ctx.fillStyle = color;
+            ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+            
+            // 標籤文字
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(line1, boxX + 8, boxY + 8);
+            ctx.fillText(line2, boxX + 8, boxY + 24);
         }
     }
 }
