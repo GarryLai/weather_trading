@@ -3,147 +3,174 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>天氣看板</title>
-    <!-- Bootstrap CSS -->
+    <title>天氣看板 - TradingView Style</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
 </head>
-<body class="bg-dark text-light d-flex flex-column" style="height: 100dvh; overflow: hidden;">
+<body class="d-flex flex-column vh-100 m-0 overflow-hidden">
 
-<div class="container-xl py-3 d-flex flex-column h-100 overflow-y-auto">
-    <div class="d-flex align-items-center justify-content-center mb-3 flex-shrink-0">
-        <h2 class="fw-bold m-0 fs-4 fs-md-2"><i class="bi bi-cloud-sun"></i> 天氣看板</h2>
-    </div>
+    <!-- Top Toolbar -->
+    <header class="tv-toolbar tv-top-toolbar d-flex align-items-center px-3 border-bottom border-secondary border-opacity-25 flex-shrink-0 z-3 position-relative">
+        <!-- Logo / Title -->
+        <div class="d-flex align-items-center me-3">
+            <i class="bi bi-cloud-sun fs-5 text-primary me-2"></i>
+            <span class="fw-bold fs-6 text-light d-none d-md-block">天氣看版</span>
+        </div>
+        <div class="tv-divider me-3 d-none d-md-block"></div>
 
-    <div class="card bg-secondary text-white shadow-sm mb-3 border-0 flex-shrink-0">
-        <div class="card-body p-3">
-            <div class="row g-2 g-md-3">
+        <!-- Controls container -->
+        <div class="d-flex align-items-center flex-grow-1 overflow-x-auto text-nowrap gap-1" style="scrollbar-width: none;">
+            <select id="dataType" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto fw-medium shadow-none">
+                <option value="observation" class="bg-dark">觀測 (PBLAP)</option>
+                <option value="forecast" class="bg-dark">預報 (CWA)</option>
+                <option value="openweathermap" class="bg-dark">預報 (OWM)</option>
+            </select>
+
+            <div class="tv-divider mx-1"></div>
+
+            <!-- 預報專用 -->
+            <div id="cityWrapper" class="d-none d-flex align-items-center">
+                <select id="city" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto shadow-none">
+                    <option value="臺北市" class="bg-dark">臺北市</option>
+                    <option value="新北市" class="bg-dark">新北市</option>
+                    <option value="桃園市" class="bg-dark">桃園市</option>
+                    <option value="臺中市" class="bg-dark">臺中市</option>
+                    <option value="臺南市" class="bg-dark">臺南市</option>
+                    <option value="高雄市" class="bg-dark">高雄市</option>
+                    <option value="基隆市" class="bg-dark">基隆市</option>
+                    <option value="新竹縣" class="bg-dark">新竹縣</option>
+                    <option value="新竹市" class="bg-dark">新竹市</option>
+                    <option value="苗栗縣" class="bg-dark">苗栗縣</option>
+                    <option value="彰化縣" class="bg-dark">彰化縣</option>
+                    <option value="南投縣" class="bg-dark">南投縣</option>
+                    <option value="雲林縣" class="bg-dark">雲林縣</option>
+                    <option value="嘉義縣" class="bg-dark">嘉義縣</option>
+                    <option value="嘉義市" class="bg-dark">嘉義市</option>
+                    <option value="屏東縣" class="bg-dark">屏東縣</option>
+                    <option value="宜蘭縣" class="bg-dark">宜蘭縣</option>
+                    <option value="花蓮縣" class="bg-dark">花蓮縣</option>
+                    <option value="臺東縣" class="bg-dark">臺東縣</option>
+                    <option value="澎湖縣" class="bg-dark">澎湖縣</option>
+                    <option value="金門縣" class="bg-dark">金門縣</option>
+                    <option value="連江縣" class="bg-dark">連江縣</option>
+                </select>
+                <div class="tv-divider mx-1"></div>
+            </div>
+
+            <div id="forecastIntervalWrapper" class="d-none d-flex align-items-center">
+                <select id="forecastInterval" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto shadow-none">
+                    <option value="1d" class="bg-dark">1D</option>
+                    <option value="6h" selected class="bg-dark">6H</option>
+                </select>
+                <div class="tv-divider mx-1"></div>
+            </div>
+
+            <!-- 觀測專用 -->
+            <div class="d-flex align-items-center gap-1 obs-only">
+                <input type="date" id="startDate" class="tv-form-control form-control form-control-sm bg-transparent border-0 text-light w-auto shadow-none" style="min-width: 120px;">
+                <span class="text-secondary opacity-50 px-1">-</span>
+                <input type="date" id="endDate" class="tv-form-control form-control form-control-sm bg-transparent border-0 text-light w-auto shadow-none" style="min-width: 120px;">
                 
-                <!-- 控制群組：資料來源 -->
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <label for="dataType" class="form-label text-light">資料來源</label>
-                    <select id="dataType" class="form-select bg-dark text-white border-secondary">
-                        <option value="observation">觀測 (PBLAP)</option>
-                        <option value="forecast">預報 (CWA)</option>
-                        <option value="openweathermap">預報 (OpenWeatherMap)</option>
-                    </select>
-                </div>
-
-                <!-- 控制群組：預報專用 -->
-                <div class="col-lg-2 col-md-4 col-sm-6 d-none" id="cityWrapper">
-                    <label for="city" id="cityLabel" class="form-label text-light">縣市</label>
-                    <select id="city" class="form-select bg-dark text-white border-secondary">
-                        <option value="臺北市">臺北市</option>
-                        <option value="新北市">新北市</option>
-                        <option value="桃園市">桃園市</option>
-                        <option value="臺中市">臺中市</option>
-                        <option value="臺南市">臺南市</option>
-                        <option value="高雄市">高雄市</option>
-                        <option value="基隆市">基隆市</option>
-                        <option value="新竹縣">新竹縣</option>
-                        <option value="新竹市">新竹市</option>
-                        <option value="苗栗縣">苗栗縣</option>
-                        <option value="彰化縣">彰化縣</option>
-                        <option value="南投縣">南投縣</option>
-                        <option value="雲林縣">雲林縣</option>
-                        <option value="嘉義縣">嘉義縣</option>
-                        <option value="嘉義市">嘉義市</option>
-                        <option value="屏東縣">屏東縣</option>
-                        <option value="宜蘭縣">宜蘭縣</option>
-                        <option value="花蓮縣">花蓮縣</option>
-                        <option value="臺東縣">臺東縣</option>
-                        <option value="澎湖縣">澎湖縣</option>
-                        <option value="金門縣">金門縣</option>
-                        <option value="連江縣">連江縣</option>
-                    </select>
-                </div>
-
-                <div class="col-lg-2 col-md-4 col-sm-6 d-none" id="forecastIntervalWrapper">
-                    <label for="forecastInterval" id="forecastIntervalLabel" class="form-label text-light">預報區間</label>
-                    <select id="forecastInterval" class="form-select bg-dark text-white border-secondary">
-                        <option value="1d">日 (單日最高/低溫)</option>
-                        <option value="6h" selected>逐6/12小時 (MinT/MaxT)</option>
-                    </select>
-                </div>
-
-                <!-- 控制群組：觀測專用 -->
-                <div class="col-lg-2 col-md-4 col-sm-6 obs-only">
-                    <label for="startDate" class="form-label text-light">開始日期</label>
-                    <input type="date" id="startDate" class="form-control bg-dark text-white border-secondary">
-                </div>
-
-                <div class="col-lg-2 col-md-4 col-sm-6 obs-only">
-                    <label for="endDate" class="form-label text-light">結束日期</label>
-                    <input type="date" id="endDate" class="form-control bg-dark text-white border-secondary">
-                </div>
+                <div class="tv-divider mx-1"></div>
                 
-                <div class="col-lg-2 col-md-4 col-sm-6 obs-only">
-                    <label for="interval" class="form-label text-light">統計區間</label>
-                    <select id="interval" class="form-select bg-dark text-white border-secondary">
-                        <option value="1m">分鐘</option>
-                        <option value="1h" selected>小時 (整點)</option>
-                        <option value="4h">4小時 (0/4/8時)</option>
-                        <option value="1d">日 (08:00開盤)</option>
-                        <option value="1mo">月 (08:00開盤)</option>
-                    </select>
-                </div>
+                <select id="interval" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto shadow-none fw-medium">
+                    <option value="1m" class="bg-dark">1m</option>
+                    <option value="1h" selected class="bg-dark">1h</option>
+                    <option value="4h" class="bg-dark">4h</option>
+                    <option value="1d" class="bg-dark">1D</option>
+                    <option value="1mo" class="bg-dark">1M</option>
+                </select>
 
-                <!-- 觀測專用按鈕，放置在新的一列 -->
-                <div class="col-lg-4 col-md-12 col-sm-12 obs-only mt-3 mt-lg-0">
-                    <label class="form-label d-none d-lg-block">&nbsp;</label>
-                    <div id="obsDateButtons" class="d-flex gap-1 gap-md-2">
-                        <button id="prevMonthBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn"><i class="bi bi-chevron-double-left d-none d-sm-inline"></i> 上月</button>
-                        <button id="prevDayBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn"><i class="bi bi-chevron-left d-none d-sm-inline"></i> 前日</button>
-                        <button id="todayBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn">今日</button>
-                        <button id="nextDayBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn">後日 <i class="bi bi-chevron-right d-none d-sm-inline"></i></button>
-                        <button id="nextMonthBtn" class="btn btn-outline-light flex-fill text-nowrap px-1 date-btn">下月 <i class="bi bi-chevron-double-right d-none d-sm-inline"></i></button>
-                    </div>
-                </div>
-
-                <!-- 控制群組：氣象變數 -->
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <label for="weatherVariable" class="form-label text-light">氣象變數</label>
-                    <select id="weatherVariable" class="form-select bg-dark text-white border-secondary">
-                        <option value="temp">溫度</option>
-                        <option value="rh" class="obs-only">相對濕度</option>
-                        <option value="ws" class="obs-only">風速風向</option>
-                        <option value="p" class="obs-only">氣壓</option>
-                        <option value="pr" class="obs-only">累積降雨</option>
-                        <option value="sr" class="obs-only">太陽輻射</option>
-                    </select>
-                </div>
-
-                <!-- 控制群組：圖表類型 -->
-                <div class="col-lg-2 col-md-4 col-sm-6">
-                    <label for="chartStyle" class="form-label text-light">圖表類型</label>
-                    <select id="chartStyle" class="form-select bg-dark text-white border-secondary">
-                        <!-- 選項會透過 JS 動態產生 -->
-                    </select>
-                </div>
-
-                <!-- Push search button to the right -->
-                <div class="col-lg-2 col-md-12 col-sm-12 ms-auto mt-4 mt-lg-0 align-self-end">
-                    <label class="form-label d-none d-lg-block">&nbsp;</label>
-                    <button id="searchBtn" class="btn btn-primary w-100 fw-bold shadow-sm">查詢資料</button>
-                </div>
+                <div class="tv-divider mx-1 d-none d-md-block"></div>
                 
+                <!-- 日期按鈕 -->
+                <button id="prevMonthBtn" class="tv-btn btn btn-sm text-secondary date-btn d-none d-md-flex" title="上月"><i class="bi bi-chevron-double-left"></i></button>
+                <button id="prevDayBtn" class="tv-btn btn btn-sm text-secondary date-btn" title="前日"><i class="bi bi-chevron-left"></i></button>
+                <button id="todayBtn" class="tv-btn btn btn-sm text-secondary date-btn px-2 fw-medium">Today</button>
+                <button id="nextDayBtn" class="tv-btn btn btn-sm text-secondary date-btn" title="後日"><i class="bi bi-chevron-right"></i></button>
+                <button id="nextMonthBtn" class="tv-btn btn btn-sm text-secondary date-btn d-none d-md-flex" title="下月"><i class="bi bi-chevron-double-right"></i></button>
+
+                <div class="tv-divider mx-1 d-none d-md-block"></div>
+            </div>
+
+            <!-- 共用變數及圖表類型 -->
+            <div class="d-flex align-items-center gap-1">
+                <select id="weatherVariable" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto shadow-none">
+                    <option value="temp" class="bg-dark">溫度</option>
+                    <option value="rh" class="bg-dark obs-only">相對濕度</option>
+                    <option value="ws" class="bg-dark obs-only">風速風向</option>
+                    <option value="p" class="bg-dark obs-only">氣壓</option>
+                    <option value="pr" class="bg-dark obs-only">累積降雨</option>
+                </select>
+                <div class="tv-divider mx-1"></div>
+                <select id="chartStyle" class="tv-form-select form-select form-select-sm bg-transparent border-0 text-light w-auto shadow-none">
+                    <!-- 選項會透過 JS 動態產生 -->
+                </select>
+            </div>
+            
+            <div class="ms-auto d-flex align-items-center gap-1">
+                <button id="searchBtn" class="tv-btn btn btn-sm text-light fw-medium d-none">搜尋</button>
+                <button id="fullscreenBtn" class="tv-btn btn btn-sm text-secondary" title="全螢幕"><i class="bi bi-arrows-fullscreen"></i></button>
+                <button id="screenshotBtn" class="tv-btn btn btn-sm text-secondary d-none d-sm-flex" title="儲存圖表圖片"><i class="bi bi-camera"></i></button>
             </div>
         </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div id="chartWorkspace" class="d-flex flex-grow-1 overflow-hidden position-relative bg-tv-main">
+        
+        <!-- Left Sidebar (Tools) -->
+        <aside class="tv-toolbar tv-left-sidebar d-flex flex-column align-items-center py-2 border-end border-secondary border-opacity-25 flex-shrink-0 z-3 gap-1">
+            <button class="tv-btn-icon text-secondary drawing-tool text-primary" data-tool="cursor" title="一般游標 (移動/縮放圖表)"><i class="bi bi-cursor"></i></button>
+            <div class="tv-divider mx-1 w-50 h-auto" style="height: 1px !important;"></div>
+            <button class="tv-btn-icon text-secondary drawing-tool" data-tool="line" title="趨勢線"><i class="bi bi-slash-lg" style="transform: rotate(45deg);"></i></button>
+            <button class="tv-btn-icon text-secondary drawing-tool" data-tool="pencil" title="鉛筆 (自由繪圖)"><i class="bi bi-brush"></i></button>
+            <button class="tv-btn-icon text-secondary drawing-tool" data-tool="ruler" title="測量框"><i class="bi bi-rulers"></i></button>
+            <div class="flex-grow-1"></div>
+            <button class="tv-btn-icon text-secondary" id="clearDrawingsBtn" title="清除所有繪圖"><i class="bi bi-trash"></i></button>
+        </aside>
+
+        <!-- Chart Area -->
+        <main class="flex-grow-1 position-relative d-flex flex-column h-100">
+            <!-- Sub-header for Symbol Info Overlay -->
+            <div class="position-absolute top-0 start-0 p-3 pe-none" style="z-index: 20;">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="fw-bold text-light fs-5" id="chartSymbolTitle">WEATHER</span>
+                    <span class="badge rounded-pill align-text-bottom" style="background:#2962FF; font-size: 0.65rem;">⛅</span>
+                    <span class="text-secondary small ms-1 fw-bold" id="chartSymbolInterval">1h</span>
+                </div>
+            </div>
+
+            <!-- The Chart and Overlay -->
+            <div class="position-absolute top-0 start-0 w-100 h-100">
+                <div id="chart" class="w-100 h-100"></div>
+            </div>
+            
+            <!-- Drawing Canvas Overlay -->
+            <canvas id="drawingCanvas" class="position-absolute top-0 start-0 w-100 h-100" style="pointer-events: none; z-index: 10;"></canvas>
+            
+        </main>
     </div>
 
-    <!-- Chart Container -->
-    <div class="card bg-dark border-secondary shadow-sm overflow-hidden chart-card flex-grow-1 d-flex flex-column" style="min-height: 300px;">
-        <div class="card-body p-0 position-relative flex-grow-1">
-            <div id="chart" class="position-absolute top-0 start-0 w-100 h-100"></div>
+    <!-- Bottom Toolbar -->
+    <footer class="tv-toolbar tv-bottom-toolbar border-top border-secondary border-opacity-25 d-flex align-items-center px-3 flex-shrink-0 text-secondary gap-3" style="font-size: 13px; z-index: 3;">
+        <div class="d-flex align-items-center gap-2 d-none d-sm-flex">
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="1D">1D</span>
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="5D">5D</span>
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="1M">1M</span>
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="3M">3M</span>
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="6M">6M</span>
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="YTD">YTD</span>
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="1Y">1Y</span>
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="5Y">5Y</span>
+            <span class="hover-text cursor-pointer opacity-75 time-range-btn fw-medium" data-range="All">All</span>
         </div>
-    </div>
-</div>
+        <div class="flex-grow-1"></div>
+        <span id="autoScaleBtn" class="text-primary cursor-pointer fw-medium hover-text" title="圖表置中適應 (Fit Content)">auto</span>
+    </footer>
 
-<!-- Bootstrap JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Bootstrap Icons (Optional but nice) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

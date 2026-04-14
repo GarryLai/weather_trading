@@ -1,20 +1,30 @@
 // 初始化圖表
 const chartOptions = { 
     layout: { 
-        textColor: 'white', 
-        background: { type: 'solid', color: '#1E1E1E' } 
+        textColor: '#d1d4dc', 
+        background: { type: 'solid', color: '#131722' } 
+    },
+    grid: {
+        vertLines: { color: '#2a2e39' },
+        horzLines: { color: '#2a2e39' },
+    },
+    crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
     },
     timeScale: {
         timeVisible: true,
         secondsVisible: false,
         fixLeftEdge: true,
         fixRightEdge: true,
+        borderColor: '#2a2e39',
     },
     rightPriceScale: {
         visible: true,
+        borderColor: '#2a2e39',
     },
     leftPriceScale: {
         visible: false,
+        borderColor: '#2a2e39',
     }
 };
 const chart = LightweightCharts.createChart(document.getElementById('chart'), chartOptions);
@@ -663,3 +673,306 @@ document.getElementById('nextMonthBtn').addEventListener('click', () => adjustDa
 // 初始渲染
 updateChartStyleOptions();
 updateChart();
+
+// 根據選項更新左上角的標題
+function updateChartTitle() {
+    const titleEl = document.getElementById('chartSymbolTitle');
+    if (!titleEl) return;
+    
+    const dataType = document.getElementById('dataType').value;
+    const city = document.getElementById('city').value;
+    
+    if (dataType === 'observation') {
+        titleEl.innerText = 'PBLAP 觀測';
+    } else if (dataType === 'forecast') {
+        titleEl.innerText = `${city} (CWA)`;
+    } else if (dataType === 'openweathermap') {
+        titleEl.innerText = `${city} (OWM)`;
+    }
+}
+
+document.getElementById('dataType').addEventListener('change', updateChartTitle);
+document.getElementById('city').addEventListener('change', updateChartTitle);
+updateChartTitle();
+
+// --- 新增功能按鈕實作 ---
+
+// 全螢幕切換
+document.getElementById('fullscreenBtn')?.addEventListener('click', () => {
+    const workspace = document.documentElement; // 放大整個畫面
+    if (!document.fullscreenElement) {
+        workspace.requestFullscreen().catch(err => {
+            console.error("無法進入全螢幕:", err);
+        });
+        document.getElementById('fullscreenBtn').innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+    } else {
+        document.exitFullscreen();
+        document.getElementById('fullscreenBtn').innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+    }
+});
+
+// 圖表截圖分享
+document.getElementById('screenshotBtn')?.addEventListener('click', () => {
+    if (!chart) return;
+    const canvas = chart.takeScreenshot();
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    const symbol = document.getElementById('chartSymbolTitle').innerText.replace(/\s+/g, '_');
+    const ts = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+    a.download = `WeatherChart_${symbol}_${ts}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+});
+
+// 自動縮放 (auto 按鈕)
+document.getElementById('autoScaleBtn')?.addEventListener('click', () => {
+    if (chart) {
+        chart.timeScale().fitContent();
+    }
+});
+
+// 底部時間範圍切換 (1D, 5D, 1M...)
+document.querySelectorAll('.time-range-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const dataType = document.getElementById('dataType').value;
+        if (dataType !== 'observation') {
+            alert("「時間跨度按鈕」目前僅適用於『觀測 (PBLAP)』模式！如需更改預報日期，請使用上方選單。");
+            return;
+        }
+
+        // 切換按鈕的 Active Styling
+        document.querySelectorAll('.time-range-btn').forEach(b => {
+            b.classList.remove('text-primary');
+            b.style.opacity = '0.75';
+        });
+        e.target.classList.add('text-primary');
+        e.target.style.opacity = '1';
+
+        const range = e.target.getAttribute('data-range');
+        const endDateInput = document.getElementById('endDate');
+        const startDateInput = document.getElementById('startDate');
+        
+        let end = new Date();
+        endDateInput.value = end.toISOString().split('T')[0];
+        
+        let start = new Date(end);
+        
+        switch(range) {
+            case '1D': break;                 // 今天
+            case '5D': start.setDate(start.getDate() - 4); break;
+            case '1M': start.setMonth(start.getMonth() - 1); break;
+            case '3M': start.setMonth(start.getMonth() - 3); break;
+            case '6M': start.setMonth(start.getMonth() - 6); break;
+            case 'YTD': start = new Date(start.getFullYear(), 0, 1); break;
+            case '1Y': start.setFullYear(start.getFullYear() - 1); break;
+            case '5Y': start.setFullYear(start.getFullYear() - 5); break;
+            case 'All': start = new Date('2015-01-01'); break; // 假設的最早資料點
+        }
+        
+        startDateInput.value = start.toISOString().split('T')[0];
+        
+        // 根據時間長度自動調整統計區間(Interval)，避免資料點過多卡頓
+        const daysDiff = (end - start) / (1000 * 60 * 60 * 24);
+        const intervalInput = document.getElementById('interval');
+        if (daysDiff > 365) {
+            intervalInput.value = '1mo'; // 1年甚至更久用月
+        } else if (daysDiff > 180) {
+            intervalInput.value = '1d';  // 半年用每日
+        } else if (daysDiff > 31) {
+            intervalInput.value = '4h';  // 幾個月內用4小時
+        } else if (daysDiff > 5) {
+            intervalInput.value = '1h';  // 幾週內用1小時
+        } else {
+            intervalInput.value = '1m';  // 5天以內用分鐘
+        }
+        
+        updateChart();
+    });
+});
+
+// 當 interval 改變時，動態更新左上角的文字 (例： 1h, 1D...)
+function updateSymbolIntervalText() {
+    const intervalEl = document.getElementById('chartSymbolInterval');
+    const dataType = document.getElementById('dataType').value;
+    if (intervalEl) {
+        if (dataType === 'observation') {
+            const select = document.getElementById('interval');
+            intervalEl.innerText = select.options[select.selectedIndex].innerText;
+        } else {
+            const select = document.getElementById('forecastInterval');
+            intervalEl.innerText = select.options[select.selectedIndex].innerText;
+        }
+    }
+}
+
+document.getElementById('dataType').addEventListener('change', updateSymbolIntervalText);
+document.getElementById('interval').addEventListener('change', updateSymbolIntervalText);
+document.getElementById('forecastInterval').addEventListener('change', updateSymbolIntervalText);
+
+// 延遲執行一次初始化文字
+setTimeout(updateSymbolIntervalText, 100);
+
+
+// --- 繪圖功能實作 (Overlay Canvas) ---
+let drawingMode = 'cursor';
+let drawings = [];
+let ongoingDrawing = null;
+const canvas = document.getElementById('drawingCanvas');
+const ctx = canvas.getContext('2d');
+
+function syncCanvasSize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    redrawCanvas();
+}
+window.addEventListener('resize', syncCanvasSize);
+setTimeout(syncCanvasSize, 500);
+
+document.querySelectorAll('.drawing-tool').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // Reset all buttons
+        document.querySelectorAll('.drawing-tool').forEach(b => {
+            b.classList.remove('text-primary');
+            b.classList.add('text-secondary');
+        });
+        // Set active button
+        e.currentTarget.classList.remove('text-secondary');
+        e.currentTarget.classList.add('text-primary');
+
+        drawingMode = e.currentTarget.getAttribute('data-tool');
+        
+        // Enable/Disable canvas interaction
+        if (drawingMode === 'cursor') {
+            canvas.style.pointerEvents = 'none';
+        } else {
+            canvas.style.pointerEvents = 'auto'; // 啟用畫布操作，將攔截圖表滾動
+        }
+    });
+});
+
+document.getElementById('clearDrawingsBtn').addEventListener('click', () => {
+    drawings = [];
+    ongoingDrawing = null;
+    redrawCanvas();
+});
+
+chart.timeScale().subscribeVisibleLogicalRangeChange(() => redrawCanvas());
+chart.subscribeCrosshairMove(() => redrawCanvas());
+
+// 繪圖事件
+let isDrawing = false;
+
+canvas.addEventListener('mousedown', (e) => {
+    if (drawingMode === 'cursor') return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const activeSeries = currentSeriesList[0];
+    if (!activeSeries) return;
+
+    const time = chart.timeScale().coordinateToLogical(x);
+    const price = activeSeries.coordinateToPrice(y);
+    if (time === null || price === null) return;
+    
+    isDrawing = true;
+
+    if (drawingMode === 'line') {
+        ongoingDrawing = { type: 'line', points: [{time, price}, {time, price}] };
+    } else if (drawingMode === 'pencil') {
+        ongoingDrawing = { type: 'pencil', points: [{time, price}] };
+    } else if (drawingMode === 'ruler') {
+        ongoingDrawing = { type: 'ruler', start: {time, price}, end: {time, price}, startPt:{x, y}, endPt:{x, y} };
+    }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing || !ongoingDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const activeSeries = currentSeriesList[0];
+    if (!activeSeries) return;
+
+    const time = chart.timeScale().coordinateToLogical(x);
+    const price = activeSeries.coordinateToPrice(y);
+    if (time === null || price === null) return;
+
+    if (drawingMode === 'line') {
+        ongoingDrawing.points[1] = {time, price};
+    } else if (drawingMode === 'pencil') {
+        ongoingDrawing.points.push({time, price});
+    } else if (drawingMode === 'ruler') {
+        ongoingDrawing.end = {time, price};
+        ongoingDrawing.endPt = {x, y};
+    }
+    redrawCanvas();
+});
+
+canvas.addEventListener('mouseup', () => {
+    if (isDrawing && ongoingDrawing) {
+        drawings.push(ongoingDrawing);
+        ongoingDrawing = null;
+    }
+    isDrawing = false;
+    redrawCanvas();
+});
+
+canvas.addEventListener('mouseleave', () => {
+    if (isDrawing && ongoingDrawing) {
+        drawings.push(ongoingDrawing);
+        ongoingDrawing = null;
+    }
+    isDrawing = false;
+    redrawCanvas();
+});
+
+function redrawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const activeSeries = currentSeriesList[0];
+    if (!activeSeries) return;
+
+    drawings.forEach(d => renderShape(d, activeSeries, ctx));
+    if (ongoingDrawing) renderShape(ongoingDrawing, activeSeries, ctx);
+}
+
+function renderShape(shape, series, ctx) {
+    if (shape.type === 'line' || shape.type === 'pencil') {
+        ctx.beginPath();
+        let started = false;
+        shape.points.forEach((pt, index) => {
+            const cx = chart.timeScale().logicalToCoordinate(pt.time);
+            const cy = series.priceToCoordinate(pt.price);
+            if (cx !== null && cy !== null) {
+                if (!started) {
+                    ctx.moveTo(cx, cy);
+                    started = true;
+                } else {
+                    ctx.lineTo(cx, cy);
+                }
+            }
+        });
+        ctx.strokeStyle = '#2962FF';
+        ctx.lineWidth = shape.type === 'pencil' ? 2 : 2;
+        ctx.stroke();
+    } else if (shape.type === 'ruler') {
+        const cx1 = chart.timeScale().logicalToCoordinate(shape.start.time);
+        const cy1 = series.priceToCoordinate(shape.start.price);
+        const cx2 = chart.timeScale().logicalToCoordinate(shape.end.time);
+        const cy2 = series.priceToCoordinate(shape.end.price);
+        
+        if (cx1 !== null && cy1 !== null && cx2 !== null && cy2 !== null) {
+            ctx.fillStyle = 'rgba(41, 98, 255, 0.2)';
+            ctx.fillRect(Math.min(cx1, cx2), Math.min(cy1, cy2), Math.abs(cx2 - cx1), Math.abs(cy2 - cy1));
+            ctx.strokeStyle = '#2962FF';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(Math.min(cx1, cx2), Math.min(cy1, cy2), Math.abs(cx2 - cx1), Math.abs(cy2 - cy1));
+            
+            // Draw text
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText(`Δ Price: ${(shape.end.price - shape.start.price).toFixed(2)}`, Math.min(cx1, cx2) + 5, Math.min(cy1, cy2) + 15);
+        }
+    }
+}
