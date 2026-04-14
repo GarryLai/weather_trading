@@ -246,30 +246,58 @@ async function fetchData() {
     let currentStart = new Date(start);
     let combinedRawData = [];
 
-    // 處理超過 45 天需拆包 (遞迴 / 迴圈分批查詢)
-    searchBtn.innerText = '載入中...';
-    searchBtn.disabled = true;
+    // 處理超過 45 天需拆包 (平行查詢)
+    let loader = document.getElementById('loadingOverlay');
+    if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'loadingOverlay';
+        loader.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:rgba(19, 23, 34, 0.9);padding:20px;border-radius:8px;border:1px solid #2a2e39;color:#d1d4dc;font-weight:bold;text-align:center;min-width:250px;box-shadow: 0 4px 12px rgba(0,0,0,0.5);';
+        document.getElementById('chartWorkspace').appendChild(loader);
+    }
+    loader.style.display = 'block';
+    loader.innerHTML = '載入中... (0%) <div style="width:100%;height:6px;background:#2a2e39;margin-top:10px;border-radius:3px;overflow:hidden"><div style="width:0%;height:100%;background:#2962FF;transition:width 0.2s"></div></div>';
 
     try {
-        while (totalDays > 0) {
-            const requestDays = Math.min(totalDays, 45);
-            const timeStr = currentStart.toISOString().split('T')[0];
+        const fetchPromises = [];
+        let tempTotalDays = totalDays;
+        let tempCurrentStart = new Date(currentStart);
+        
+        const totalChunks = Math.ceil(tempTotalDays / 45);
+        let completedChunks = 0;
+
+        while (tempTotalDays > 0) {
+            const requestDays = Math.min(tempTotalDays, 45);
+            const timeStr = tempCurrentStart.toISOString().split('T')[0];
             
-            const response = await fetch(`https://pblap.ppp503.workers.dev/?mode=sfc&time=${timeStr}&days=${requestDays}&stno=10`);
-            if (!response.ok) throw new Error("API 發生錯誤");
-            const rawData = await response.json();
-            
+            const requestPromise = fetch(`https://pblap.ppp503.workers.dev/?mode=sfc&time=${timeStr}&days=${requestDays}&stno=10`)
+                .then(res => {
+                    if (!res.ok) throw new Error("API 發生錯誤");
+                    return res.json();
+                })
+                .then(data => {
+                    completedChunks++;
+                    const percent = Math.round((completedChunks / totalChunks) * 100);
+                    loader.innerHTML = `載入中... (${percent}%) <div style="width:100%;height:6px;background:#2a2e39;margin-top:10px;border-radius:3px;overflow:hidden"><div style="width:${percent}%;height:100%;background:#2962FF;transition:width 0.2s"></div></div>`;
+                    return data;
+                });
+            fetchPromises.push(requestPromise);
+
+            tempTotalDays -= requestDays;
+            if (tempTotalDays > 0) {
+                tempCurrentStart = new Date(tempCurrentStart.getTime() + requestDays * msPerDay);
+            }
+        }
+
+        const results = await Promise.all(fetchPromises);
+        results.forEach(rawData => {
             if (Array.isArray(rawData)) {
                 combinedRawData = combinedRawData.concat(rawData);
             }
-
-            totalDays -= requestDays;
-            if (totalDays > 0) {
-                currentStart = new Date(currentStart.getTime() + requestDays * msPerDay);
-            }
-        }
+        });
     } catch (err) {
         alert(err.message);
+    } finally {
+        if (loader) loader.style.display = 'none';
     }
 
     searchBtn.innerText = '查詢資料';
