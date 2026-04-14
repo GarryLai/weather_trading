@@ -665,6 +665,27 @@ const resizeObserver = new ResizeObserver(entries => {
 resizeObserver.observe(chartContainer);
 
 // 日期按鈕功能
+function updateDateButtonsState() {
+    const endDateInput = document.getElementById('endDate');
+    if (!endDateInput.value) return;
+
+    const endDate = new Date(endDateInput.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    const nextDayBtn = document.getElementById('nextDayBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+
+    // 若結束日期大於或等於今天，停用「後日」按鈕
+    nextDayBtn.disabled = endDate.getTime() >= today.getTime();
+
+    // 若結束日期加上一個月後會超過今天，停用「下月」按鈕
+    const nextMonthExpected = new Date(endDate);
+    nextMonthExpected.setMonth(nextMonthExpected.getMonth() + 1);
+    nextMonthBtn.disabled = nextMonthExpected.getTime() > today.getTime();
+}
+
 function adjustDate(dayDiff, monthDiff) {
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
@@ -684,6 +705,7 @@ function adjustDate(dayDiff, monthDiff) {
     startDateInput.value = start.toISOString().split('T')[0];
     endDateInput.value = end.toISOString().split('T')[0];
     
+    updateDateButtonsState();
     updateChart();
 }
 
@@ -693,12 +715,18 @@ document.getElementById('todayBtn').addEventListener('click', () => {
     const todayStr = new Date().toISOString().split('T')[0];
     document.getElementById('startDate').value = todayStr;
     document.getElementById('endDate').value = todayStr;
+    updateDateButtonsState();
     updateChart();
 });
 document.getElementById('nextDayBtn').addEventListener('click', () => adjustDate(1, 0));
 document.getElementById('nextMonthBtn').addEventListener('click', () => adjustDate(0, 1));
 
+['startDate', 'endDate'].forEach(id => {
+    document.getElementById(id).addEventListener('change', updateDateButtonsState);
+});
+
 // 初始渲染
+updateDateButtonsState();
 updateChartStyleOptions();
 updateChart();
 
