@@ -1130,7 +1130,7 @@ function renderShape(shape, series, ctx) {
             const bgColor = isUp ? 'rgba(239, 83, 80, 0.15)' : 'rgba(38, 166, 154, 0.15)';
             
             // 繪製座標軸投影與高亮反白 (沿用 TradingView 習慣色)
-            drawAxisHighlight(ctx, shape.start, shape.end, cx1, cy1, cx2, cy2, isUp ? '#26a69a' : '#ef5350');
+            drawAxisHighlight(ctx, shape.start, shape.end, cx1, cy1, cx2, cy2, isUp ? '#ef5350' : '#26a69a');
             
             // 繪製半透明測量區域
             ctx.fillStyle = bgColor;
